@@ -37,7 +37,7 @@ export const LAYOUT = {
 };
 
 export const BASE_PHYSICS = {
-  gravity: 400,
+  gravity: 0,
   globalDamping: 0.12,
   elasticity: 0.85,
   maxSpeed: 980,

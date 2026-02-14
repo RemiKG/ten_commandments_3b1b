@@ -15,7 +15,7 @@ export class PhysicsEngine {
       vy: -34,
       radius: BALLOON_CONFIG.baseRadius,
       targetRadius: BALLOON_CONFIG.baseRadius,
-      density: 1,
+      massFactor: 1,
       localDamping: 0,
       elasticity: BASE_PHYSICS.elasticity,
       tunnelGhost: 0,
@@ -53,7 +53,7 @@ export class PhysicsEngine {
     const b = this.balloon;
 
     b.targetRadius = BALLOON_CONFIG.baseRadius;
-    b.density = 1;
+    b.massFactor = 1;
     b.localDamping = 0;
     b.elasticity = BASE_PHYSICS.elasticity;
 
@@ -73,6 +73,7 @@ export class PhysicsEngine {
     switch (activeTool) {
       case "heat": {
         b.targetRadius = clamp(BALLOON_CONFIG.baseRadius * 1.24, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
+        b.massFactor = 0.88;
         b.temperature = clamp(b.temperature + dt * 2.8, -1, 1);
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: false,
@@ -83,8 +84,8 @@ export class PhysicsEngine {
       }
       case "cold": {
         b.targetRadius = clamp(BALLOON_CONFIG.baseRadius * 0.68, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
-        b.density = 1.62;
-        b.localDamping += 0.48;
+        b.massFactor = 1.75;
+        b.localDamping += 0.76;
         b.temperature = clamp(b.temperature - dt * 2.9, -1, 1);
         break;
       }
@@ -125,18 +126,18 @@ export class PhysicsEngine {
         break;
       }
       case "tunneling": {
-        b.localDamping += 2.15;
+        b.localDamping += 0.62;
 
         const target = this._findNearestWall(pointerX, pointerY, 22);
         this.tunnelPreview = target;
 
         if (target) {
-          this.disableWall(target.wall.id, 0.2);
+          this.disableWall(target.wall.id, 0.36);
         }
 
         if (this._isBalloonNearDisabledWall()) {
           b.tunnelGhost = 1;
-          b.localDamping += 1.2;
+          b.localDamping += 0.28;
         }
         break;
       }
@@ -147,15 +148,16 @@ export class PhysicsEngine {
         break;
       }
       case "elasticity": {
-        b.elasticity = 1.04;
-        b.density = 0.96;
+        b.elasticity = 1.2;
+        b.massFactor = 0.9;
         break;
       }
       case "entropy": {
+        const response = 1 / Math.max(0.25, b.massFactor);
         const n1 = valueNoise2D(this.time * 3.8, b.x * 0.012) - 0.5;
         const n2 = valueNoise2D(b.y * 0.011, this.time * 3.4) - 0.5;
-        b.vx += n1 * 430 * dt;
-        b.vy += n2 * 430 * dt;
+        b.vx += n1 * 430 * dt * response;
+        b.vy += n2 * 430 * dt * response;
         break;
       }
       default:
@@ -171,10 +173,12 @@ export class PhysicsEngine {
     const distSq = dist * dist;
 
     const direction = attract ? 1 : -1;
-    const strength = (98000 / (distSq + 18000)) * direction;
+    const rawStrength = (28000000 / (distSq + 16000)) * direction;
+    const strength = clamp(rawStrength, -1250, 1250);
+    const response = 1 / Math.max(0.25, b.massFactor);
 
-    b.vx += (dx / dist) * strength * dt;
-    b.vy += (dy / dist) * strength * dt;
+    b.vx += (dx / dist) * strength * dt * response;
+    b.vy += (dy / dist) * strength * dt * response;
   }
 
   _applyCursorRadialForce(px, py, dt, options) {
@@ -192,9 +196,10 @@ export class PhysicsEngine {
     const nx = (dx / dist) * direction;
     const ny = (dy / dist) * direction;
     const force = options.strength * Math.pow(influence, options.power ?? 1);
+    const response = 1 / Math.max(0.25, b.massFactor);
 
-    b.vx += nx * force * dt;
-    b.vy += ny * force * dt;
+    b.vx += nx * force * dt * response;
+    b.vy += ny * force * dt * response;
   }
 
   _applyImpulsePulse(px, py, inward, magnitude) {
@@ -212,9 +217,10 @@ export class PhysicsEngine {
     const nx = (dx / dist) * direction;
     const ny = (dy / dist) * direction;
     const impulse = magnitude * Math.pow(influence, 0.72);
+    const response = 1 / Math.max(0.25, b.massFactor);
 
-    b.vx += nx * impulse;
-    b.vy += ny * impulse;
+    b.vx += nx * impulse * response;
+    b.vy += ny * impulse * response;
   }
 
   _findNearestWall(px, py, maxDistance) {
@@ -266,8 +272,6 @@ export class PhysicsEngine {
     const b = this.balloon;
 
     b.radius += (b.targetRadius - b.radius) * Math.min(dt * 6.4, 1);
-
-    b.vy += BASE_PHYSICS.gravity * b.density * dt;
 
     const damping = Math.exp(-(BASE_PHYSICS.globalDamping + Math.max(0, b.localDamping)) * dt);
     b.vx *= damping;
