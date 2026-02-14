@@ -1,5 +1,6 @@
 ﻿import { BALLOON_CONFIG, BASE_PHYSICS, createMazeSegments, LAYOUT } from "./config.js";
-import { clamp, closestPointOnSegment, dot, length, normalize, valueNoise2D } from "./math.js";
+import { clamp, closestPointOnSegment, dot, length, normalize } from "./math.js";
+import { ThermoAutomata } from "./thermoAutomata.js";
 
 const TOOL_RADIUS = LAYOUT.lensRadius * 1.45;
 const BASE_HEFT = 5;
@@ -8,6 +9,12 @@ export class PhysicsEngine {
   constructor() {
     this.walls = createMazeSegments();
     this.time = 0;
+
+    this.thermo = new ThermoAutomata(LAYOUT.board, 20);
+    this.thermoSample = this.thermo.sample(
+      LAYOUT.board.x + LAYOUT.board.width * 0.5,
+      LAYOUT.board.y + LAYOUT.board.height * 0.5,
+    );
 
     this.balloon = {
       x: LAYOUT.board.x + LAYOUT.board.width * 0.5,
@@ -21,6 +28,8 @@ export class PhysicsEngine {
       elasticity: BASE_PHYSICS.elasticity,
       tunnelGhost: 0,
       temperature: 0,
+      pressure: 1,
+      entropy: 0,
     };
 
     this.trail = [];
@@ -35,12 +44,40 @@ export class PhysicsEngine {
     const step = clamp(dt, 1 / 180, 1 / 25);
     this.time += step;
 
+    const pointerX = Number.isFinite(control.pointerX) ? control.pointerX : this.balloon.x;
+    const pointerY = Number.isFinite(control.pointerY) ? control.pointerY : this.balloon.y;
+    const pointerInBoard =
+      typeof control.pointerInBoard === "boolean"
+        ? control.pointerInBoard
+        : pointInBoard(pointerX, pointerY);
+
+    const thermoControl = {
+      activeTool: control.activeTool,
+      applying: Boolean(control.applying),
+      pointerX,
+      pointerY,
+      pointerInBoard,
+    };
+
+    this.thermo.update(step, thermoControl);
+
     this._updateDisabledWalls(step);
     this._decayToolCooldowns(step);
-    this._resetDynamicBalloonState(step);
+
+    this.thermoSample = this.thermo.sample(this.balloon.x, this.balloon.y);
+    this._resetDynamicBalloonState(step, this.thermoSample);
 
     if (control.applying) {
-      this._applyToolEffect(control, step, particles);
+      this._applyToolEffect(
+        {
+          ...control,
+          pointerX,
+          pointerY,
+          pointerInBoard,
+        },
+        step,
+        particles,
+      );
     } else {
       this.tunnelPreview = null;
     }
@@ -50,16 +87,34 @@ export class PhysicsEngine {
     this._updateTrail(step);
   }
 
-  _resetDynamicBalloonState(dt) {
+  _resetDynamicBalloonState(dt, sample) {
     const b = this.balloon;
 
-    b.targetRadius = BALLOON_CONFIG.baseRadius;
-    b.massFactor = BASE_HEFT;
     b.localDamping = 0;
     b.elasticity = BASE_PHYSICS.elasticity;
 
-    b.temperature *= Math.exp(-dt * 1.35);
     b.tunnelGhost = Math.max(0, b.tunnelGhost - dt * 2.2);
+
+    if (sample) {
+      b.pressure = sample.pressure;
+      b.entropy = sample.entropy;
+
+      const expansion = clamp(Math.sqrt(sample.temperature / Math.max(0.22, sample.pressure)), 0.62, 1.46);
+      const density = clamp(Math.sqrt(sample.pressure / Math.max(0.25, sample.temperature)), 0.55, 3.2);
+
+      b.targetRadius = BALLOON_CONFIG.baseRadius * expansion;
+      b.massFactor = BASE_HEFT * density;
+      b.temperature = clamp((sample.temperature - 1) * 1.4, -1.5, 1.5);
+
+      // Entropy behaves like microscale turbulence/friction in this fake model.
+      b.localDamping += sample.entropy * 0.14;
+    } else {
+      b.targetRadius = BALLOON_CONFIG.baseRadius;
+      b.massFactor = BASE_HEFT;
+      b.temperature *= Math.exp(-dt * 1.35);
+      b.pressure = 1;
+      b.entropy = 0;
+    }
   }
 
   _decayToolCooldowns(dt) {
@@ -68,26 +123,24 @@ export class PhysicsEngine {
   }
 
   _applyToolEffect(control, dt, particles) {
-    const { activeTool, pointerX, pointerY, pointerPressed } = control;
+    const { activeTool, pointerX, pointerY, pointerPressed, pointerInBoard } = control;
     const b = this.balloon;
 
     switch (activeTool) {
       case "heat": {
-        b.targetRadius = clamp(BALLOON_CONFIG.baseRadius * 1.24, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
-        b.massFactor = BASE_HEFT * 0.88;
-        b.temperature = clamp(b.temperature + dt * 2.8, -1, 1);
+        b.targetRadius = clamp(b.targetRadius * 1.07, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
+        b.massFactor *= 0.9;
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: false,
-          strength: 980,
-          power: 1.2,
+          strength: 1450,
+          power: 1.1,
         });
         break;
       }
       case "cold": {
-        b.targetRadius = clamp(BALLOON_CONFIG.baseRadius * 0.68, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
-        b.massFactor = BASE_HEFT * 1.75;
-        b.localDamping += 0.76;
-        b.temperature = clamp(b.temperature - dt * 2.9, -1, 1);
+        b.targetRadius = clamp(b.targetRadius * 0.92, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
+        b.massFactor *= 1.22;
+        b.localDamping += 1.05;
         break;
       }
       case "mass": {
@@ -101,12 +154,12 @@ export class PhysicsEngine {
       case "highPressure": {
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: false,
-          strength: 1700,
+          strength: 2100,
           power: 0.8,
         });
 
         if (pointerPressed || this.pressureCooldown <= 0) {
-          this._applyImpulsePulse(pointerX, pointerY, false, 1180);
+          this._applyImpulsePulse(pointerX, pointerY, false, 1400);
           particles?.spawnPressureBurst(pointerX, pointerY, 1);
           this.pressureCooldown = 0.062;
         }
@@ -115,12 +168,12 @@ export class PhysicsEngine {
       case "vacuum": {
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: true,
-          strength: 1600,
+          strength: 2000,
           power: 0.8,
         });
 
         if (pointerPressed || this.vacuumCooldown <= 0) {
-          this._applyImpulsePulse(pointerX, pointerY, true, 1220);
+          this._applyImpulsePulse(pointerX, pointerY, true, 1450);
           particles?.spawnVacuumSink(pointerX, pointerY, 1);
           this.vacuumCooldown = 0.053;
         }
@@ -150,15 +203,27 @@ export class PhysicsEngine {
       }
       case "elasticity": {
         b.elasticity = 1.2;
-        b.massFactor = BASE_HEFT * 0.9;
+        b.massFactor *= 0.9;
         break;
       }
       case "entropy": {
+        if (!pointerInBoard) {
+          break;
+        }
+
+        const sample = this.thermo.sample(pointerX, pointerY);
         const response = 1 / Math.max(0.25, b.massFactor);
-        const n1 = valueNoise2D(this.time * 3.8, b.x * 0.012) - 0.5;
-        const n2 = valueNoise2D(b.y * 0.011, this.time * 3.4) - 0.5;
-        b.vx += n1 * 1100 * dt * response;
-        b.vy += n2 * 1100 * dt * response;
+        const swirlX = -sample.gradPressureY;
+        const swirlY = sample.gradPressureX;
+        const driftX = sample.gradTempX - sample.gradPressureX;
+        const driftY = sample.gradTempY - sample.gradPressureY;
+        const chaos = 4200 * (0.65 + sample.entropy);
+        const phase = this.time * 14 + pointerX * 0.009 + pointerY * 0.013;
+        const jitter = 820 * (0.35 + sample.entropy);
+
+        b.vx += (swirlX * 1500 + driftX * chaos + Math.cos(phase) * jitter) * dt * response;
+        b.vy += (swirlY * 1500 + driftY * chaos + Math.sin(phase * 1.17) * jitter) * dt * response;
+        b.localDamping += sample.entropy * 0.22;
         break;
       }
       default:
@@ -394,4 +459,9 @@ export class PhysicsEngine {
       this.trail.splice(0, this.trail.length - BALLOON_CONFIG.trailMaxPoints);
     }
   }
+}
+
+function pointInBoard(x, y) {
+  const board = LAYOUT.board;
+  return x >= board.x && y >= board.y && x <= board.x + board.width && y <= board.y + board.height;
 }
