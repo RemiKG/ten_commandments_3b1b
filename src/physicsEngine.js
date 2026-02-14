@@ -2,6 +2,7 @@
 import { clamp, closestPointOnSegment, dot, length, normalize, valueNoise2D } from "./math.js";
 
 const TOOL_RADIUS = LAYOUT.lensRadius * 1.45;
+const BASE_HEFT = 5;
 
 export class PhysicsEngine {
   constructor() {
@@ -15,7 +16,7 @@ export class PhysicsEngine {
       vy: -34,
       radius: BALLOON_CONFIG.baseRadius,
       targetRadius: BALLOON_CONFIG.baseRadius,
-      massFactor: 1,
+      massFactor: BASE_HEFT,
       localDamping: 0,
       elasticity: BASE_PHYSICS.elasticity,
       tunnelGhost: 0,
@@ -53,7 +54,7 @@ export class PhysicsEngine {
     const b = this.balloon;
 
     b.targetRadius = BALLOON_CONFIG.baseRadius;
-    b.massFactor = 1;
+    b.massFactor = BASE_HEFT;
     b.localDamping = 0;
     b.elasticity = BASE_PHYSICS.elasticity;
 
@@ -73,18 +74,18 @@ export class PhysicsEngine {
     switch (activeTool) {
       case "heat": {
         b.targetRadius = clamp(BALLOON_CONFIG.baseRadius * 1.24, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
-        b.massFactor = 0.88;
+        b.massFactor = BASE_HEFT * 0.88;
         b.temperature = clamp(b.temperature + dt * 2.8, -1, 1);
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: false,
-          strength: 470,
+          strength: 980,
           power: 1.2,
         });
         break;
       }
       case "cold": {
         b.targetRadius = clamp(BALLOON_CONFIG.baseRadius * 0.68, BALLOON_CONFIG.minRadius, BALLOON_CONFIG.maxRadius);
-        b.massFactor = 1.75;
+        b.massFactor = BASE_HEFT * 1.75;
         b.localDamping += 0.76;
         b.temperature = clamp(b.temperature - dt * 2.9, -1, 1);
         break;
@@ -100,12 +101,12 @@ export class PhysicsEngine {
       case "highPressure": {
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: false,
-          strength: 950,
+          strength: 1700,
           power: 0.8,
         });
 
         if (pointerPressed || this.pressureCooldown <= 0) {
-          this._applyImpulsePulse(pointerX, pointerY, false, 620);
+          this._applyImpulsePulse(pointerX, pointerY, false, 1180);
           particles?.spawnPressureBurst(pointerX, pointerY, 1);
           this.pressureCooldown = 0.062;
         }
@@ -114,12 +115,12 @@ export class PhysicsEngine {
       case "vacuum": {
         this._applyCursorRadialForce(pointerX, pointerY, dt, {
           inward: true,
-          strength: 840,
+          strength: 1600,
           power: 0.8,
         });
 
         if (pointerPressed || this.vacuumCooldown <= 0) {
-          this._applyImpulsePulse(pointerX, pointerY, true, 650);
+          this._applyImpulsePulse(pointerX, pointerY, true, 1220);
           particles?.spawnVacuumSink(pointerX, pointerY, 1);
           this.vacuumCooldown = 0.053;
         }
@@ -149,15 +150,15 @@ export class PhysicsEngine {
       }
       case "elasticity": {
         b.elasticity = 1.2;
-        b.massFactor = 0.9;
+        b.massFactor = BASE_HEFT * 0.9;
         break;
       }
       case "entropy": {
         const response = 1 / Math.max(0.25, b.massFactor);
         const n1 = valueNoise2D(this.time * 3.8, b.x * 0.012) - 0.5;
         const n2 = valueNoise2D(b.y * 0.011, this.time * 3.4) - 0.5;
-        b.vx += n1 * 430 * dt * response;
-        b.vy += n2 * 430 * dt * response;
+        b.vx += n1 * 1100 * dt * response;
+        b.vy += n2 * 1100 * dt * response;
         break;
       }
       default:
@@ -173,8 +174,8 @@ export class PhysicsEngine {
     const distSq = dist * dist;
 
     const direction = attract ? 1 : -1;
-    const rawStrength = (28000000 / (distSq + 16000)) * direction;
-    const strength = clamp(rawStrength, -1250, 1250);
+    const rawStrength = (43000000 / (distSq + 16000)) * direction;
+    const strength = clamp(rawStrength, -2200, 2200);
     const response = 1 / Math.max(0.25, b.massFactor);
 
     b.vx += (dx / dist) * strength * dt * response;
@@ -273,7 +274,8 @@ export class PhysicsEngine {
 
     b.radius += (b.targetRadius - b.radius) * Math.min(dt * 6.4, 1);
 
-    const damping = Math.exp(-(BASE_PHYSICS.globalDamping + Math.max(0, b.localDamping)) * dt);
+    const inertialDamping = BASE_PHYSICS.globalDamping / Math.max(1, b.massFactor);
+    const damping = Math.exp(-(inertialDamping + Math.max(0, b.localDamping)) * dt);
     b.vx *= damping;
     b.vy *= damping;
 
