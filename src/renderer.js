@@ -12,7 +12,7 @@ export class Renderer {
     const ctx = this.ctx;
 
     ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this._drawBackground();
+    this._drawBackground(gameState.activeTool);
     this._drawTitle(gameState);
 
     this._drawFieldLens(
@@ -34,7 +34,7 @@ export class Renderer {
     this._drawCornerDiamond();
   }
 
-  _drawBackground() {
+  _drawBackground(activeTool) {
     const ctx = this.ctx;
 
     ctx.fillStyle = COLORS.background;
@@ -55,14 +55,48 @@ export class Renderer {
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
+    if (activeTool === "mass" || activeTool === "darkEnergy") {
+      ctx.save();
+      ctx.strokeStyle = "rgba(89,236,255,0.17)";
+      ctx.lineWidth = 1;
+      const spacing = 36;
+
+      for (let x = 0; x <= WORLD_WIDTH; x += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, WORLD_HEIGHT);
+        ctx.stroke();
+      }
+
+      for (let y = 0; y <= WORLD_HEIGHT; y += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(WORLD_WIDTH, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     ctx.save();
-    ctx.globalAlpha = 0.05;
-    for (let i = 0; i < 1200; i += 1) {
+    ctx.globalAlpha = 0.052;
+    for (let i = 0; i < 1400; i += 1) {
       const x = (i * 97.31) % WORLD_WIDTH;
       const y = (i * 189.17) % WORLD_HEIGHT;
       const size = i % 3 === 0 ? 2 : 1;
       ctx.fillStyle = i % 7 === 0 ? "rgba(100,200,255,0.15)" : "rgba(255,255,255,0.26)";
       ctx.fillRect(x, y, size, size);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.1;
+    ctx.strokeStyle = "rgba(255,255,255,0.045)";
+    ctx.lineWidth = 1;
+    for (let y = 0.5; y < WORLD_HEIGHT; y += 4) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(WORLD_WIDTH, y);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -74,11 +108,15 @@ export class Renderer {
 
     const ctx = this.ctx;
     const lensRadius = LAYOUT.lensRadius;
+    const overlayKind = TOOL_OVERLAY_KIND[activeTool];
+    const useWorldLens = overlayKind === "gravity_in" || overlayKind === "gravity_out";
 
     ctx.save();
-    this._clipBoardLens(cx, cy, lensRadius);
-
-    const overlayKind = TOOL_OVERLAY_KIND[activeTool];
+    if (useWorldLens) {
+      this._clipLens(cx, cy, lensRadius);
+    } else {
+      this._clipBoardLens(cx, cy, lensRadius);
+    }
 
     switch (overlayKind) {
       case "thermal_out":
@@ -88,10 +126,10 @@ export class Renderer {
         this._drawThermalField(cx, cy, false);
         break;
       case "gravity_in":
-        this._drawGravityField(cx, cy, true);
+        this._drawGravityField(cx, cy, true, { x: 0, y: 0, width: WORLD_WIDTH, height: WORLD_HEIGHT });
         break;
       case "gravity_out":
-        this._drawGravityField(cx, cy, false);
+        this._drawGravityField(cx, cy, false, { x: 0, y: 0, width: WORLD_WIDTH, height: WORLD_HEIGHT });
         break;
       case "pressure_out":
         this._drawPressureField(cx, cy, false);
@@ -129,9 +167,16 @@ export class Renderer {
     ctx.restore();
   }
 
+  _clipLens(cx, cy, radius) {
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.clip();
+  }
+
   _clipBoardLens(cx, cy, radius) {
     const ctx = this.ctx;
-    const board = LAYOUT.board;
+    const area = options.area ?? LAYOUT.board;
 
     ctx.beginPath();
     ctx.rect(board.x, board.y, board.width, board.height);
@@ -163,10 +208,11 @@ export class Renderer {
     });
   }
 
-  _drawGravityField(cx, cy, inward) {
+  _drawGravityField(cx, cy, inward, area = LAYOUT.board) {
     this._drawWarpedGrid(cx, cy, {
       color: "rgba(89,236,255,0.6)",
       inward,
+      area,
     });
 
     this._drawVectorField(cx, cy, {
@@ -175,6 +221,7 @@ export class Renderer {
       spacing: 42,
       length: 11,
       alphaMultiplier: 0.9,
+      area,
     });
   }
 
@@ -192,13 +239,13 @@ export class Renderer {
 
   _drawEntropyField(cx, cy) {
     const ctx = this.ctx;
-    const board = LAYOUT.board;
+    const area = options.area ?? LAYOUT.board;
     const spacing = 36;
     const radius = LAYOUT.lensRadius;
 
     ctx.save();
-    for (let y = board.y + spacing * 0.5; y < board.y + board.height; y += spacing) {
-      for (let x = board.x + spacing * 0.5; x < board.x + board.width; x += spacing) {
+    for (let y = area.y + spacing * 0.5; y < area.y + area.height; y += spacing) {
+      for (let x = area.x + spacing * 0.5; x < area.x + area.width; x += spacing) {
         const dx = x - cx;
         const dy = y - cy;
         const dist = Math.hypot(dx, dy);
@@ -265,9 +312,8 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawWarpedGrid(cx, cy, { color, inward }) {
+  _drawWarpedGrid(cx, cy, { color, inward, area = LAYOUT.board }) {
     const ctx = this.ctx;
-    const board = LAYOUT.board;
     const spacing = 40;
     const warpRadius = LAYOUT.lensRadius * 1.1;
 
@@ -288,11 +334,11 @@ export class Renderer {
       };
     };
 
-    for (let x = board.x; x <= board.x + board.width; x += spacing) {
+    for (let x = area.x; x <= area.x + area.width; x += spacing) {
       ctx.beginPath();
-      for (let y = board.y; y <= board.y + board.height; y += 12) {
+      for (let y = area.y; y <= area.y + area.height; y += 12) {
         const p = warp(x, y);
-        if (y === board.y) {
+        if (y === area.y) {
           ctx.moveTo(p.x, p.y);
         } else {
           ctx.lineTo(p.x, p.y);
@@ -301,11 +347,11 @@ export class Renderer {
       ctx.stroke();
     }
 
-    for (let y = board.y; y <= board.y + board.height; y += spacing) {
+    for (let y = area.y; y <= area.y + area.height; y += spacing) {
       ctx.beginPath();
-      for (let x = board.x; x <= board.x + board.width; x += 12) {
+      for (let x = area.x; x <= area.x + area.width; x += 12) {
         const p = warp(x, y);
-        if (x === board.x) {
+        if (x === area.x) {
           ctx.moveTo(p.x, p.y);
         } else {
           ctx.lineTo(p.x, p.y);
@@ -319,7 +365,7 @@ export class Renderer {
 
   _drawVectorField(cx, cy, options) {
     const ctx = this.ctx;
-    const board = LAYOUT.board;
+    const area = options.area ?? LAYOUT.board;
     const radius = LAYOUT.lensRadius;
 
     const spacing = options.spacing ?? 42;
@@ -328,8 +374,8 @@ export class Renderer {
     const streakMode = Boolean(options.streakMode);
 
     ctx.save();
-    for (let y = board.y + spacing * 0.5; y < board.y + board.height; y += spacing) {
-      for (let x = board.x + spacing * 0.5; x < board.x + board.width; x += spacing) {
+    for (let y = area.y + spacing * 0.5; y < area.y + area.height; y += spacing) {
+      for (let x = area.x + spacing * 0.5; x < area.x + area.width; x += spacing) {
         const dx = x - cx;
         const dy = y - cy;
         const dist = Math.hypot(dx, dy);
@@ -470,7 +516,7 @@ export class Renderer {
 
   _drawBoardFrame() {
     const ctx = this.ctx;
-    const board = LAYOUT.board;
+    const area = options.area ?? LAYOUT.board;
 
     ctx.save();
     ctx.strokeStyle = COLORS.lineWhite;
@@ -509,7 +555,7 @@ export class Renderer {
     }
 
     const ctx = this.ctx;
-    const board = LAYOUT.board;
+    const area = options.area ?? LAYOUT.board;
 
     ctx.save();
     ctx.beginPath();
@@ -731,14 +777,203 @@ export class Renderer {
       ctx.lineTo(rect.x + rect.width - 8, rect.y);
       ctx.stroke();
 
-      ctx.fillStyle = isActive ? tool.accent : "rgba(255,255,255,0.9)";
-      ctx.font = "35px Times New Roman";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(tool.glyph, rect.x + rect.width * 0.5, rect.y + rect.height * 0.54);
+      const iconColor = isActive ? tool.accent : "rgba(255,255,255,0.9)";
+      this._drawSidebarGlyph(tool.id, rect, iconColor);
     }
 
     ctx.restore();
+  }
+
+  _drawSidebarGlyph(toolId, rect, color) {
+    const cx = rect.x + rect.width * 0.5;
+    const cy = rect.y + rect.height * 0.54;
+    const ctx = this.ctx;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+
+    switch (toolId) {
+      case "heat":
+        this._drawThermometerIcon(cx, cy, true);
+        break;
+      case "cold":
+        this._drawThermometerIcon(cx, cy, false);
+        break;
+      case "mass":
+        this._drawVectorIcon(cx, cy, "M", true);
+        break;
+      case "darkEnergy":
+        this._drawVectorIcon(cx, cy, "L", false);
+        break;
+      case "highPressure":
+        this._drawVectorIcon(cx, cy, "P", false);
+        break;
+      case "vacuum":
+        this._drawVectorIcon(cx, cy, "P", true);
+        break;
+      case "tunneling":
+        this._drawPsiIcon(cx, cy);
+        break;
+      case "viscosity":
+        this._drawViscosityIcon(cx, cy);
+        break;
+      case "elasticity":
+        this._drawSpringIcon(cx, cy);
+        break;
+      case "entropy":
+        this._drawEntropyIcon(cx, cy);
+        break;
+      default:
+        ctx.font = "30px Times New Roman";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("?", cx, cy);
+        break;
+    }
+
+    ctx.restore();
+  }
+
+  _drawThermometerIcon(cx, cy, hot) {
+    const ctx = this.ctx;
+    const top = cy - 18;
+    const bottom = cy + 12;
+
+    ctx.beginPath();
+    ctx.arc(cx - 10, bottom + 4, 6, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, top);
+    ctx.lineTo(cx - 10, bottom);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 3, cy + (hot ? -8 : 8));
+    ctx.lineTo(cx + 16, cy + (hot ? -8 : 8));
+    ctx.stroke();
+
+    ctx.beginPath();
+    if (hot) {
+      ctx.moveTo(cx + 14, cy - 11);
+      ctx.lineTo(cx + 16, cy - 8);
+      ctx.lineTo(cx + 14, cy - 5);
+    } else {
+      ctx.moveTo(cx + 14, cy + 5);
+      ctx.lineTo(cx + 16, cy + 8);
+      ctx.lineTo(cx + 14, cy + 11);
+    }
+    ctx.stroke();
+
+    ctx.font = "15px Times New Roman";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("dT", cx + 18, cy + (hot ? -8 : 8));
+  }
+
+  _drawVectorIcon(cx, cy, letter, inward) {
+    const ctx = this.ctx;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.font = "26px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(letter, cx, cy + 1);
+
+    const arrows = [
+      { x: 0, y: -21 },
+      { x: 21, y: 0 },
+      { x: 0, y: 21 },
+      { x: -21, y: 0 },
+    ];
+
+    for (const arrow of arrows) {
+      const x0 = cx + arrow.x * (inward ? 1 : 0.35);
+      const y0 = cy + arrow.y * (inward ? 1 : 0.35);
+      const x1 = cx + arrow.x * (inward ? 0.35 : 1);
+      const y1 = cy + arrow.y * (inward ? 0.35 : 1);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
+  }
+
+  _drawPsiIcon(cx, cy) {
+    const ctx = this.ctx;
+
+    ctx.font = "30px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Y", cx - 9, cy - 3);
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 1, cy + 8);
+    ctx.lineTo(cx + 24, cy + 8);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 12, cy - 10);
+    ctx.lineTo(cx + 12, cy + 8);
+    ctx.stroke();
+  }
+
+  _drawViscosityIcon(cx, cy) {
+    const ctx = this.ctx;
+
+    ctx.font = "30px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("n", cx - 10, cy - 2);
+
+    for (let i = -1; i <= 1; i += 1) {
+      const y = cy + i * 8;
+      ctx.beginPath();
+      ctx.moveTo(cx - 2, y);
+      ctx.lineTo(cx + 24, y);
+      ctx.stroke();
+    }
+  }
+
+  _drawSpringIcon(cx, cy) {
+    const ctx = this.ctx;
+
+    ctx.font = "30px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("k", cx - 11, cy - 2);
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 2, cy - 14);
+    for (let i = 0; i < 8; i += 1) {
+      const x = cx + 2 + i * 3;
+      const y = cy - 14 + i * 4;
+      ctx.lineTo(x + (i % 2 === 0 ? 4 : -4), y);
+    }
+    ctx.stroke();
+  }
+
+  _drawEntropyIcon(cx, cy) {
+    const ctx = this.ctx;
+
+    ctx.font = "31px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("S", cx - 11, cy - 2);
+
+    for (let i = 0; i < 9; i += 1) {
+      const x = cx + 2 + (i % 3) * 8;
+      const y = cy - 10 + Math.floor(i / 3) * 8;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   _drawTitle(gameState) {
@@ -800,3 +1035,4 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.arcTo(x, y, x + width, y, r);
   ctx.closePath();
 }
+
