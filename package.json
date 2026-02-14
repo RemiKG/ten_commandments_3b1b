@@ -1,0 +1,24 @@
+{
+  "name": "ten_commandments_3b1b-main",
+  "version": "1.0.0",
+  "description": "Physics-based puzzle sandbox built for the McGill Physics Hackathon.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RemiKG/ten_commandments_3b1b.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RemiKG/ten_commandments_3b1b/issues"
+  },
+  "homepage": "https://github.com/RemiKG/ten_commandments_3b1b#readme"
+}
