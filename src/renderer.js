@@ -1,14 +1,14 @@
 ﻿import { COLORS, LAYOUT, TOOL_BY_ID, TOOLS, WORLD_HEIGHT, WORLD_WIDTH } from "./config.js";
-import { clamp, lerp, valueNoise2D } from "./math.js";
-import { getSidebarItemRect, pointInBoard } from "./uiLayout.js";
+import { clamp, length, lerp, valueNoise2D } from "./math.js";
 import { TOOL_OVERLAY_KIND } from "./fieldModes.js";
+import { getSidebarItemRect, pointInBoard } from "./uiLayout.js";
 
 export class Renderer {
   constructor(ctx) {
     this.ctx = ctx;
   }
 
-  render(physics, input, gameState) {
+  render(physics, input, gameState, particles) {
     const ctx = this.ctx;
 
     ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -23,8 +23,10 @@ export class Renderer {
     );
 
     this._drawBoardFrame();
+    this._drawTunnelWallEffects(physics);
     this._drawWalls(physics.walls, physics.disabledWalls);
-    this._drawTrail(physics.trail);
+    this._drawParticles(particles);
+    this._drawTrail(physics.trail, physics.balloon.temperature);
     this._drawBalloon(physics.balloon);
 
     this._drawCrosshair(input.pointerX, input.pointerY, TOOL_BY_ID[gameState.activeTool].accent);
@@ -375,19 +377,95 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawTitle(gameState) {
+  _drawTunnelWallEffects(physics) {
     const ctx = this.ctx;
-    ctx.save();
-    ctx.fillStyle = COLORS.lineWhite;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "58px Times New Roman";
-    ctx.fillText(gameState.titleText, LAYOUT.title.x, LAYOUT.title.y);
+    const tracked = new Map();
 
-    ctx.font = "26px Times New Roman";
-    ctx.fillStyle = "rgba(255,255,255,0.78)";
-    ctx.fillText(`Constants Remaining: ${gameState.constantsRemaining}/10`, LAYOUT.title.x, LAYOUT.title.y + 38);
+    if (physics.tunnelPreview?.wall) {
+      tracked.set(physics.tunnelPreview.wall.id, physics.tunnelPreview.wall);
+    }
+
+    for (const wallId of physics.disabledWalls.keys()) {
+      const wall = physics.walls.find((item) => item.id === wallId);
+      if (wall) {
+        tracked.set(wall.id, wall);
+      }
+    }
+
+    if (tracked.size === 0) {
+      return;
+    }
+
+    ctx.save();
+    for (const wall of tracked.values()) {
+      this._drawWallNoiseBand(wall);
+      this._drawWallWireframe(wall);
+    }
     ctx.restore();
+  }
+
+  _drawWallNoiseBand(wall) {
+    const ctx = this.ctx;
+    const dx = wall.b.x - wall.a.x;
+    const dy = wall.b.y - wall.a.y;
+    const segLen = Math.hypot(dx, dy) || 1;
+    const tx = dx / segLen;
+    const ty = dy / segLen;
+    const px = -ty;
+    const py = tx;
+
+    const samples = Math.max(34, Math.floor(segLen / 4));
+    for (let i = 0; i < samples; i += 1) {
+      const t = i / samples;
+      const jitter = (Math.random() - 0.5) * 36;
+      const spread = (Math.random() - 0.5) * 12;
+      const x = wall.a.x + dx * t + px * jitter + tx * spread;
+      const y = wall.a.y + dy * t + py * jitter + ty * spread;
+      const size = Math.random() > 0.75 ? 2 : 1;
+      ctx.fillStyle = Math.random() > 0.45 ? "rgba(255,255,255,0.42)" : "rgba(255,255,255,0.18)";
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  _drawWallWireframe(wall) {
+    const ctx = this.ctx;
+    const dx = wall.b.x - wall.a.x;
+    const dy = wall.b.y - wall.a.y;
+    const segLen = Math.hypot(dx, dy) || 1;
+    const tx = dx / segLen;
+    const ty = dy / segLen;
+    const px = -ty;
+    const py = tx;
+
+    const steps = Math.max(14, Math.floor(segLen / 30));
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i < steps - 1; i += 1) {
+      const t0 = i / steps;
+      const t1 = (i + 1) / steps;
+
+      const baseX0 = wall.a.x + dx * t0;
+      const baseY0 = wall.a.y + dy * t0;
+      const baseX1 = wall.a.x + dx * t1;
+      const baseY1 = wall.a.y + dy * t1;
+
+      const wobble0 = (Math.random() - 0.5) * 26;
+      const wobble1 = (Math.random() - 0.5) * 26;
+
+      const upX0 = baseX0 + px * wobble0;
+      const upY0 = baseY0 + py * wobble0;
+      const upX1 = baseX1 + px * wobble1;
+      const upY1 = baseY1 + py * wobble1;
+
+      ctx.beginPath();
+      ctx.moveTo(upX0, upY0);
+      ctx.lineTo(upX1, upY1);
+      ctx.lineTo(baseX1, baseY1);
+      ctx.lineTo(baseX0, baseY0);
+      ctx.closePath();
+      ctx.stroke();
+    }
   }
 
   _drawBoardFrame() {
@@ -412,7 +490,7 @@ export class Renderer {
       }
 
       const disabled = disabledWalls.has(wall.id);
-      ctx.strokeStyle = disabled ? "rgba(255,255,255,0.35)" : COLORS.lineWhite;
+      ctx.strokeStyle = disabled ? "rgba(255,255,255,0.28)" : COLORS.lineWhite;
       ctx.setLineDash(disabled ? [5, 6] : []);
 
       ctx.beginPath();
@@ -425,21 +503,67 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawTrail(trail) {
+  _drawParticles(particles) {
+    if (!particles || particles.items.length === 0) {
+      return;
+    }
+
+    const ctx = this.ctx;
+    const board = LAYOUT.board;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(board.x, board.y, board.width, board.height);
+    ctx.clip();
+
+    for (const particle of particles.items) {
+      const lifeT = 1 - particle.age / particle.life;
+      if (lifeT <= 0) {
+        continue;
+      }
+
+      const alpha = particle.alpha * lifeT;
+      const trailScale = particle.kind === "vacuum" ? 0.03 : 0.018;
+      const x0 = particle.x - particle.vx * trailScale;
+      const y0 = particle.y - particle.vy * trailScale;
+      const x1 = particle.x + particle.vx * trailScale * 0.22;
+      const y1 = particle.y + particle.vy * trailScale * 0.22;
+
+      ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+      ctx.lineWidth = particle.size;
+      ctx.shadowColor = "rgba(255,255,255,0.7)";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  _drawTrail(trail, temperature) {
     if (trail.length < 2) {
       return;
     }
 
     const ctx = this.ctx;
+    const warm = Math.max(temperature, 0);
+    const cool = Math.max(-temperature, 0);
 
     ctx.save();
     for (let i = 1; i < trail.length; i += 1) {
       const prev = trail[i - 1];
       const node = trail[i];
       const alpha = clamp(node.life, 0, 1) * 0.86;
-      ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+
+      const r = Math.round(255 - cool * 28);
+      const g = Math.round(255 - warm * 24 + cool * 8);
+      const b = Math.round(255 - warm * 54 + cool * 38);
+
+      ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
       ctx.lineWidth = 1.2 + alpha * 4.8;
-      ctx.shadowColor = "rgba(255,255,255,0.58)";
+      ctx.shadowColor = `rgba(${r},${g},${b},0.58)`;
       ctx.shadowBlur = 16 * alpha;
       ctx.beginPath();
       ctx.moveTo(prev.x, prev.y);
@@ -451,13 +575,54 @@ export class Renderer {
 
   _drawBalloon(balloon) {
     const ctx = this.ctx;
+    const warm = Math.max(balloon.temperature, 0);
+    const cool = Math.max(-balloon.temperature, 0);
+
+    if (balloon.tunnelGhost > 0.01) {
+      this._drawBalloonGhosts(balloon);
+    }
+
     ctx.save();
+
+    if (warm > 0.02) {
+      const heatGlow = ctx.createRadialGradient(
+        balloon.x,
+        balloon.y,
+        balloon.radius * 0.8,
+        balloon.x,
+        balloon.y,
+        balloon.radius * 2.6,
+      );
+      heatGlow.addColorStop(0, `rgba(255,160,70,${warm * 0.46})`);
+      heatGlow.addColorStop(1, "rgba(255,160,70,0)");
+      ctx.fillStyle = heatGlow;
+      ctx.fillRect(balloon.x - balloon.radius * 3, balloon.y - balloon.radius * 3, balloon.radius * 6, balloon.radius * 6);
+    }
+
+    const fillR = Math.round(252 - cool * 18);
+    const fillG = Math.round(252 - warm * 24 + cool * 4);
+    const fillB = Math.round(252 - warm * 44 + cool * 26);
+
     ctx.beginPath();
     ctx.arc(balloon.x, balloon.y, balloon.radius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(252,252,252,0.985)";
-    ctx.shadowColor = "rgba(255,255,255,0.98)";
+    ctx.fillStyle = `rgba(${fillR},${fillG},${fillB},0.985)`;
+
+    if (warm >= cool) {
+      const shadowAlpha = clamp(0.7 + warm * 0.3, 0.6, 1);
+      ctx.shadowColor = `rgba(255,${Math.round(220 - warm * 70)},${Math.round(180 - warm * 110)},${shadowAlpha})`;
+    } else {
+      const shadowAlpha = clamp(0.7 + cool * 0.3, 0.6, 1);
+      ctx.shadowColor = `rgba(${Math.round(220 - cool * 40)},${Math.round(242 - cool * 20)},255,${shadowAlpha})`;
+    }
+
     ctx.shadowBlur = 56;
     ctx.fill();
+
+    if (cool > 0.03) {
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `rgba(200,235,255,${0.3 + cool * 0.35})`;
+      ctx.stroke();
+    }
 
     const spec = ctx.createRadialGradient(
       balloon.x - balloon.radius * 0.24,
@@ -467,10 +632,40 @@ export class Renderer {
       balloon.y,
       balloon.radius,
     );
-    spec.addColorStop(0, "rgba(255,255,255,0.56)");
+    spec.addColorStop(0, "rgba(255,255,255,0.6)");
     spec.addColorStop(1, "rgba(255,255,255,0.02)");
     ctx.fillStyle = spec;
     ctx.fill();
+    ctx.restore();
+  }
+
+  _drawBalloonGhosts(balloon) {
+    const ctx = this.ctx;
+    const ghost = clamp(balloon.tunnelGhost, 0, 1);
+
+    const velocityLen = length(balloon.vx, balloon.vy) || 1;
+    const nx = balloon.vx / velocityLen;
+    const ny = balloon.vy / velocityLen;
+    const px = -ny;
+    const py = nx;
+
+    const spread = 18 * ghost;
+    const configs = [
+      { r: 255, g: 80, b: 80, ox: -spread + px * 4, oy: py * 4 },
+      { r: 110, g: 255, b: 120, ox: 0, oy: 0 },
+      { r: 80, g: 110, b: 255, ox: spread - px * 4, oy: -py * 4 },
+    ];
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    for (const c of configs) {
+      ctx.beginPath();
+      ctx.arc(balloon.x + c.ox, balloon.y + c.oy, balloon.radius * 0.97, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${0.34 + ghost * 0.26})`;
+      ctx.shadowColor = `rgba(${c.r},${c.g},${c.b},0.8)`;
+      ctx.shadowBlur = 24;
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -546,6 +741,21 @@ export class Renderer {
     ctx.restore();
   }
 
+  _drawTitle(gameState) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.fillStyle = COLORS.lineWhite;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "58px Times New Roman";
+    ctx.fillText(gameState.titleText, LAYOUT.title.x, LAYOUT.title.y);
+
+    ctx.font = "26px Times New Roman";
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    ctx.fillText(`Constants Remaining: ${gameState.constantsRemaining}/10`, LAYOUT.title.x, LAYOUT.title.y + 38);
+    ctx.restore();
+  }
+
   _drawCornerDiamond() {
     const ctx = this.ctx;
     const cx = WORLD_WIDTH - 54;
@@ -579,6 +789,7 @@ function withAlpha(color, alpha) {
 
   return `rgba(255,255,255,${alpha})`;
 }
+
 function roundRect(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width * 0.5, height * 0.5);
   ctx.beginPath();
@@ -589,10 +800,3 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.arcTo(x, y, x + width, y, r);
   ctx.closePath();
 }
-
-
-
-
-
-
-
