@@ -12,53 +12,34 @@ body {
   width: 100%;
   height: 100%;
   background: #050505;
-  color: #f3f3f3;
-  font-family: "Times New Roman", Georgia, serif;
 }
 
 body {
   display: grid;
   place-items: center;
   overflow: hidden;
+  font-family: "Times New Roman", Georgia, serif;
 }
 
-.app-shell {
-  width: min(96vw, 1480px);
-  height: min(95vh, 840px);
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
-}
-
-.title-bar {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-}
-
-.title-bar h1 {
-  margin: 0;
-  font-size: clamp(32px, 2.7vw, 54px);
-  letter-spacing: 1.2px;
-  font-weight: 500;
-}
-
-.title-bar p {
-  margin: 0;
-  font-size: clamp(14px, 1vw, 20px);
-}
-
-.stage-wrap {
+.stage-root {
   width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
+  padding: 8px;
 }
 
 #gameCanvas {
-  width: 100%;
-  height: 100%;
-  border: 2px solid #ececec;
-  background: #050505;
+  width: min(98vw, 98vh * 1.7777777778);
+  height: auto;
+  max-height: 98vh;
   display: block;
+  border: 0;
+  image-rendering: auto;
+}
+
+@media (max-width: 900px) {
+  #gameCanvas {
+    width: 99vw;
+  }
 }
