@@ -176,7 +176,7 @@ export class Renderer {
 
   _clipBoardLens(cx, cy, radius) {
     const ctx = this.ctx;
-    const area = options.area ?? LAYOUT.board;
+    const board = LAYOUT.board;
 
     ctx.beginPath();
     ctx.rect(board.x, board.y, board.width, board.height);
@@ -239,13 +239,13 @@ export class Renderer {
 
   _drawEntropyField(cx, cy) {
     const ctx = this.ctx;
-    const area = options.area ?? LAYOUT.board;
+    const board = LAYOUT.board;
     const spacing = 36;
     const radius = LAYOUT.lensRadius;
 
     ctx.save();
-    for (let y = area.y + spacing * 0.5; y < area.y + area.height; y += spacing) {
-      for (let x = area.x + spacing * 0.5; x < area.x + area.width; x += spacing) {
+    for (let y = board.y + spacing * 0.5; y < board.y + board.height; y += spacing) {
+      for (let x = board.x + spacing * 0.5; x < board.x + board.width; x += spacing) {
         const dx = x - cx;
         const dy = y - cy;
         const dist = Math.hypot(dx, dy);
@@ -516,7 +516,7 @@ export class Renderer {
 
   _drawBoardFrame() {
     const ctx = this.ctx;
-    const area = options.area ?? LAYOUT.board;
+    const board = LAYOUT.board;
 
     ctx.save();
     ctx.strokeStyle = COLORS.lineWhite;
@@ -555,7 +555,7 @@ export class Renderer {
     }
 
     const ctx = this.ctx;
-    const area = options.area ?? LAYOUT.board;
+    const board = LAYOUT.board;
 
     ctx.save();
     ctx.beginPath();
