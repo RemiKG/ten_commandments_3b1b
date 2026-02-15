@@ -1,6 +1,6 @@
 ﻿import { GOAL_RADIUS, STAGES, getGoalRodPosition } from "./config.js";
-import { ASSET_FALLBACKS, createImageRegistry } from "./assetsV2.js";
 import { COLORS, LAYOUT, TOOL_BY_ID, TOOLS, VISUAL_MODES, WORLD_HEIGHT, WORLD_WIDTH } from "./config.js";
+import { ASSET_FALLBACKS, createImageRegistry } from "./assetsV2.js";
 import { clamp, length } from "./math.js";
 import { getModeToggleRect, getSidebarItemRect, pointInBoard } from "./uiLayout.js";
 
@@ -501,6 +501,9 @@ export class Renderer {
 
   _drawTitle(gameState) {
     const ctx = this.ctx;
+    const modeLabel = gameState.visualMode === VISUAL_MODES.hacker ? "Hacker Mode" : "Normal Mode";
+    const stage = STAGES[(gameState.stageIndex || 0) % STAGES.length];
+
     ctx.save();
     ctx.fillStyle = COLORS.lineWhite;
     ctx.textAlign = "center";
@@ -512,10 +515,14 @@ export class Renderer {
     ctx.fillStyle = "rgba(255,255,255,0.78)";
     ctx.fillText(`Powers Ready: ${gameState.powersReady ?? 0}/${gameState.maxAmmo ?? 0}`, LAYOUT.title.x, LAYOUT.title.y + 34);
 
+    ctx.font = "16px 'Times New Roman', serif";
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    ctx.fillText(`${modeLabel} | Stage ${stage.id}`, LAYOUT.title.x, LAYOUT.title.y + 54);
+
     if (gameState.visualMode === VISUAL_MODES.hacker && gameState.liveEquation) {
       ctx.font = "18px Cambria Math, 'Times New Roman', serif";
       ctx.fillStyle = "rgba(190,240,255,0.9)";
-      ctx.fillText(gameState.liveEquation, LAYOUT.title.x, LAYOUT.title.y + 62);
+      ctx.fillText(gameState.liveEquation, LAYOUT.title.x, LAYOUT.title.y + 76);
     }
 
     ctx.restore();
