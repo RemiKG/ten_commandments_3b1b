@@ -1,5 +1,6 @@
-﻿import { ASSET_FALLBACKS, createImageRegistry } from "./assetsV2.js";
-import { COLORS, LAYOUT, STAGES, TOOL_BY_ID, TOOLS, VISUAL_MODES, WORLD_HEIGHT, WORLD_WIDTH } from "./config.js";
+﻿import { GOAL_RADIUS, STAGES, getGoalRodPosition } from "./config.js";
+import { ASSET_FALLBACKS, createImageRegistry } from "./assetsV2.js";
+import { COLORS, LAYOUT, TOOL_BY_ID, TOOLS, VISUAL_MODES, WORLD_HEIGHT, WORLD_WIDTH } from "./config.js";
 import { clamp, length } from "./math.js";
 import { getModeToggleRect, getSidebarItemRect, pointInBoard } from "./uiLayout.js";
 
@@ -178,8 +179,7 @@ export class Renderer {
   _drawGoalRod(stageIndex) {
     const ctx = this.ctx;
     const stage = STAGES[stageIndex % STAGES.length];
-    const x = LAYOUT.board.x + LAYOUT.board.width - 78;
-    const y = LAYOUT.board.y + LAYOUT.board.height * 0.5;
+    const goal = getGoalRodPosition();
 
     ctx.save();
     ctx.strokeStyle = stage.rodColor;
@@ -187,8 +187,14 @@ export class Renderer {
     ctx.shadowBlur = 18;
     ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.moveTo(x, y - 52);
-    ctx.lineTo(x, y + 52);
+    ctx.moveTo(goal.x, goal.y - 52);
+    ctx.lineTo(goal.x, goal.y + 52);
+    ctx.stroke();
+
+    ctx.strokeStyle = withAlpha(stage.rodColor, 0.35);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(goal.x, goal.y, GOAL_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }

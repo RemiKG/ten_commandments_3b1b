@@ -1,4 +1,4 @@
-﻿import { BASE_PHYSICS, CAT_CONFIG, createMazeSegments, LAYOUT } from "./config.js";
+﻿import { CAT_SPAWN, createMazeSegments, LAYOUT, BASE_PHYSICS, CAT_CONFIG } from "./config.js";
 import { clamp, closestPointOnSegment, dot, length, normalize } from "./math.js";
 import { ThermoAutomata } from "./thermoAutomata.js";
 
@@ -16,8 +16,8 @@ export class PhysicsEngine {
     );
 
     this.cat = {
-      x: LAYOUT.board.x + LAYOUT.board.width * 0.5,
-      y: LAYOUT.board.y + LAYOUT.board.height * 0.52,
+      x: CAT_SPAWN.x,
+      y: CAT_SPAWN.y,
       vx: -48,
       vy: -34,
       radius: CAT_CONFIG.baseRadius,
@@ -30,7 +30,6 @@ export class PhysicsEngine {
       pressure: 1,
     };
 
-    // Compatibility alias while tests and external callers migrate.
     this.balloon = this.cat;
 
     this.trail = [];
@@ -92,7 +91,6 @@ export class PhysicsEngine {
         });
         return true;
       }
-
       case "cold": {
         if (!this._isCatOverDrop(drop, 0.3)) {
           return false;
@@ -104,12 +102,10 @@ export class PhysicsEngine {
         c.localDamping += 0.95;
         return true;
       }
-
       case "gravity": {
         this._applyMassField(drop.x, drop.y, dt, true);
         return true;
       }
-
       case "highPressure": {
         this.thermo.injectTool("highPressure", drop.x, drop.y, dt);
         this._applyRadialForce(drop.x, drop.y, dt, {
@@ -128,7 +124,6 @@ export class PhysicsEngine {
 
         return true;
       }
-
       case "vacuum": {
         this.thermo.injectTool("vacuum", drop.x, drop.y, dt);
         this._applyRadialForce(drop.x, drop.y, dt, {
@@ -147,7 +142,6 @@ export class PhysicsEngine {
 
         return true;
       }
-
       case "quantumTunneling": {
         c.localDamping += 0.6;
 
@@ -169,7 +163,6 @@ export class PhysicsEngine {
 
         return true;
       }
-
       default:
         return false;
     }

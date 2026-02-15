@@ -63,6 +63,13 @@ export const CAT_CONFIG = {
   trailMaxPoints: 190,
 };
 
+export const CAT_SPAWN = {
+  x: LAYOUT.board.x + LAYOUT.board.width * 0.5,
+  y: LAYOUT.board.y + LAYOUT.board.height * 0.52,
+};
+
+export const GOAL_RADIUS = 40;
+
 export const TOOLS = [
   {
     id: "heat",
@@ -206,6 +213,13 @@ export function initialAmmoState() {
 
 export function maxAmmoTotal() {
   return TOOLS.reduce((sum, tool) => sum + tool.ammo, 0);
+}
+
+export function getGoalRodPosition(board = LAYOUT.board) {
+  return {
+    x: board.x + board.width - 78,
+    y: board.y + board.height * 0.5,
+  };
 }
 
 function point(x, y) {

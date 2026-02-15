@@ -3,6 +3,7 @@ import { tryDeployPower, totalAmmo } from "./deployRuntime.js";
 import { getLiveEquation } from "./equationHud.js";
 import { GameLoop } from "./gameLoop.js";
 import { InputHandler } from "./inputHandler.js";
+import { maybeAdvanceStage } from "./stageRuntime.js";
 import { ParticleSystem } from "./particles.js";
 import { PhysicsEngine } from "./physicsEngine.js";
 import { Renderer } from "./renderer.js";
@@ -45,6 +46,8 @@ const loop = new GameLoop({
     particles.update(dt);
 
     gameState.activeDrops = gameState.activeDrops.filter((drop) => drop.remaining > 0);
+    maybeAdvanceStage(gameState, physics);
+
     gameState.powersReady = totalAmmo(gameState.ammoState);
     gameState.liveEquation = getLiveEquation(gameState.activeTool, physics, input);
 
