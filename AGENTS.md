@@ -6,7 +6,7 @@ Build **The Ten Commandments**, a viral-ready physics-based puzzle game for the 
 2. Clear explainability of each mechanic to judges.
 3. Stable, deterministic interaction over physically exact simulation.
 
-The target style is **3Blue1Brown meets Cyberpunk Laboratory**, matching the supplied references (`1.png`, `2.png`, `3.png`, `4.png`) and sidebar logic one-to-one.
+The target style is **3Blue1Brown meets Cyberpunk Laboratory**, matching the supplied references (`1.png`, `2.png`, `3.png`, `4.png`) in the Assets/Images/ folder and sidebar logic one-to-one.
 
 ## Authority And Workflow
 1. Follow `plans.md` as the execution source of truth.
