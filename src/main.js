@@ -1,4 +1,5 @@
-﻿import { initialAmmoState, maxAmmoTotal, TOOL_BY_ID, VISUAL_MODES, WORLD_HEIGHT, WORLD_WIDTH } from "./config.js";
+﻿import { AudioManager } from "./audioManager.js";
+import { initialAmmoState, maxAmmoTotal, TOOL_BY_ID, VISUAL_MODES, WORLD_HEIGHT, WORLD_WIDTH } from "./config.js";
 import { tryDeployPower, totalAmmo } from "./deployRuntime.js";
 import { getLiveEquation } from "./equationHud.js";
 import { GameLoop } from "./gameLoop.js";
@@ -23,6 +24,7 @@ const input = new InputHandler(canvas);
 const physics = new PhysicsEngine();
 const particles = new ParticleSystem();
 const renderer = new Renderer(ctx);
+const audio = new AudioManager();
 
 const ammoState = initialAmmoState();
 const maxAmmo = maxAmmoTotal();
@@ -67,9 +69,12 @@ function handleInput() {
   let deployedDrop = null;
 
   if (input.wasPressed) {
+    audio.onUserGesture();
+
     const mode = getModeAtPoint(pointerX, pointerY);
     if (mode) {
       gameState.visualMode = mode;
+      audio.setMode(mode);
     } else {
       const sidebarTool = getToolIdAtPoint(pointerX, pointerY);
       if (sidebarTool) {
@@ -85,6 +90,10 @@ function handleInput() {
           ammoState: gameState.ammoState,
           activeDrops: gameState.activeDrops,
         });
+
+        if (deployedDrop) {
+          audio.playSfx(TOOL_BY_ID[deployedDrop.toolId]?.sfxPath);
+        }
       }
     }
   }
