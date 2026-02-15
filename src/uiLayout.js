@@ -1,4 +1,4 @@
-import { LAYOUT, TOOLS } from "./config.js";
+﻿import { LAYOUT, TOOLS } from "./config.js";
 
 export function getSidebarItemHeight() {
   const sidebar = LAYOUT.sidebar;
@@ -24,6 +24,18 @@ export function getToolIdAtPoint(x, y) {
     }
   }
   return null;
+}
+
+export function getModeToggleRect() {
+  return { ...LAYOUT.modeToggle };
+}
+
+export function getModeAtPoint(x, y) {
+  const rect = getModeToggleRect();
+  if (!pointInRect(x, y, rect)) {
+    return null;
+  }
+  return x < rect.x + rect.width * 0.5 ? "normal" : "hacker";
 }
 
 export function pointInBoard(x, y) {

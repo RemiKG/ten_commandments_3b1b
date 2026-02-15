@@ -1,30 +1,43 @@
-﻿export const WORLD_WIDTH = 1600;
+﻿import { ASSET_V2 } from "./assetsV2.js";
+
+export const WORLD_WIDTH = 1600;
 export const WORLD_HEIGHT = 900;
 
+export const VISUAL_MODES = {
+  normal: "normal",
+  hacker: "hacker",
+};
+
 export const COLORS = {
-  background: "#050505",
+  hackerBackground: "#050505",
   lineWhite: "#f5f5f5",
-  dimWhite: "rgba(255,255,255,0.2)",
-  glowWhite: "rgba(255,255,255,0.92)",
-  heat: "#ff7a28",
-  cold: "#8fd7ff",
-  cyan: "#59ecff",
-  purple: "#cd4cff",
+  neonPink: "#ff49d2",
+  neonPurple: "#7f38ff",
+  neonBlue: "#66e3ff",
+  neonOrange: "#ff8a3a",
+  neonIce: "#8fd7ff",
 };
 
 export const LAYOUT = {
   title: {
     x: WORLD_WIDTH * 0.5,
-    y: 36,
+    y: 38,
   },
   sidebar: {
     x: 12,
     y: 70,
-    width: 88,
+    width: 112,
     height: 760,
-    radius: 9,
-    itemGap: 4,
-    topPad: 8,
+    radius: 12,
+    itemGap: 8,
+    topPad: 10,
+  },
+  modeToggle: {
+    x: 12,
+    y: 840,
+    width: 224,
+    height: 44,
+    radius: 10,
   },
   board: {
     x: 292,
@@ -43,10 +56,10 @@ export const BASE_PHYSICS = {
   maxSpeed: 980,
 };
 
-export const BALLOON_CONFIG = {
-  baseRadius: 36,
-  minRadius: 19,
-  maxRadius: 54,
+export const CAT_CONFIG = {
+  baseRadius: 34,
+  minRadius: 20,
+  maxRadius: 56,
   trailMaxPoints: 190,
 };
 
@@ -54,86 +67,146 @@ export const TOOLS = [
   {
     id: "heat",
     name: "Heat",
-    glyph: "dT+",
-    accent: "#ff7a28",
-    category: "Thermo",
-    title: "Fundamental Constant: Thermal Expansion",
+    accent: COLORS.neonOrange,
+    durationSec: 2,
+    ammo: 5,
+    dropRadius: 180,
+    iconPath: ASSET_V2.images.toolHeat,
+    sfxPath: ASSET_V2.audio.heat,
+    title: "Power: Heat",
   },
   {
     id: "cold",
     name: "Cold",
-    glyph: "dT-",
-    accent: "#9fdfff",
-    category: "Thermo",
-    title: "Fundamental Constant: Cryogenic Compression",
+    accent: COLORS.neonIce,
+    durationSec: 2,
+    ammo: 5,
+    dropRadius: 170,
+    iconPath: ASSET_V2.images.toolCold,
+    sfxPath: ASSET_V2.audio.cold,
+    title: "Power: Cold",
   },
   {
-    id: "mass",
-    name: "Mass",
-    glyph: "M",
-    accent: "#59ecff",
-    category: "Relativity",
-    title: "Fundamental Constant: Gravity Well",
-  },
-  {
-    id: "darkEnergy",
-    name: "Dark Energy",
-    glyph: "L",
-    accent: "#7feaff",
-    category: "Relativity",
-    title: "Fundamental Constant: Dark Energy",
+    id: "gravity",
+    name: "Gravity",
+    accent: COLORS.neonBlue,
+    durationSec: 7,
+    ammo: 4,
+    dropRadius: 220,
+    iconPath: ASSET_V2.images.toolGravity,
+    sfxPath: ASSET_V2.audio.gravity,
+    title: "Power: Gravity",
   },
   {
     id: "highPressure",
     name: "High Pressure",
-    glyph: "P+",
-    accent: "#f5f5f5",
-    category: "Fluid",
-    title: "Fundamental Constant: Fluid Dynamics (Pressure)",
+    accent: "#ffffff",
+    durationSec: 0.5,
+    ammo: 7,
+    dropRadius: 190,
+    iconPath: ASSET_V2.images.toolHighPressure,
+    sfxPath: ASSET_V2.audio.heat,
+    title: "Power: High Pressure",
   },
   {
     id: "vacuum",
     name: "Vacuum",
-    glyph: "P-",
-    accent: "#f5f5f5",
-    category: "Fluid",
-    title: "Fundamental Constant: Fluid Dynamics (Vacuum)",
+    accent: "#dff2ff",
+    durationSec: 0.5,
+    ammo: 7,
+    dropRadius: 190,
+    iconPath: ASSET_V2.images.toolVacuum,
+    sfxPath: ASSET_V2.audio.vacuum,
+    title: "Power: Vacuum",
   },
   {
-    id: "tunneling",
-    name: "Tunneling",
-    glyph: "Psi",
-    accent: "#cd4cff",
-    category: "Quantum",
-    title: "Fundamental Constant: Quantum Tunneling",
-  },
-  {
-    id: "viscosity",
-    name: "Viscosity",
-    glyph: "eta",
-    accent: "#f5f5f5",
-    category: "Material",
-    title: "Fundamental Constant: Material Viscosity",
-  },
-  {
-    id: "elasticity",
-    name: "Elasticity",
-    glyph: "k",
-    accent: "#f5f5f5",
-    category: "Material",
-    title: "Fundamental Constant: Elasticity",
-  },
-  {
-    id: "entropy",
-    name: "Entropy",
-    glyph: "S",
-    accent: "#f5f5f5",
-    category: "Material",
-    title: "Fundamental Constant: Entropy",
+    id: "quantumTunneling",
+    name: "Quantum Tunneling",
+    accent: COLORS.neonPurple,
+    durationSec: 2.2,
+    ammo: 4,
+    dropRadius: 46,
+    iconPath: ASSET_V2.images.toolQuantumTunneling,
+    sfxPath: ASSET_V2.audio.quantum,
+    title: "Power: Quantum Tunneling",
   },
 ];
 
 export const TOOL_BY_ID = Object.fromEntries(TOOLS.map((tool) => [tool.id, tool]));
+
+export const STAGES = [
+  {
+    id: 1,
+    rodColor: "#ff3945",
+    trailColorA: "rgba(255, 80, 110, 0.85)",
+    trailColorB: "rgba(255, 172, 210, 0.2)",
+  },
+  {
+    id: 2,
+    rodColor: "#ff9238",
+    trailColorA: "rgba(255, 170, 80, 0.85)",
+    trailColorB: "rgba(255, 220, 165, 0.2)",
+  },
+  {
+    id: 3,
+    rodColor: "#ffe142",
+    trailColorA: "rgba(255, 230, 90, 0.85)",
+    trailColorB: "rgba(255, 250, 180, 0.2)",
+  },
+  {
+    id: 4,
+    rodColor: "#4dff74",
+    trailColorA: "rgba(120, 255, 150, 0.85)",
+    trailColorB: "rgba(205, 255, 215, 0.2)",
+  },
+  {
+    id: 5,
+    rodColor: "#45d7ff",
+    trailColorA: "rgba(85, 220, 255, 0.85)",
+    trailColorB: "rgba(180, 245, 255, 0.2)",
+  },
+  {
+    id: 6,
+    rodColor: "#b770ff",
+    trailColorA: "rgba(180, 125, 255, 0.85)",
+    trailColorB: "rgba(230, 205, 255, 0.2)",
+  },
+];
+
+let dropCounter = 0;
+
+export function createPowerDrop(toolId, x, y, time = 0) {
+  const tool = TOOL_BY_ID[toolId];
+  if (!tool) {
+    return null;
+  }
+
+  dropCounter += 1;
+  return {
+    id: `${toolId}_${dropCounter}`,
+    toolId,
+    x,
+    y,
+    radius: tool.dropRadius,
+    duration: tool.durationSec,
+    remaining: tool.durationSec,
+    createdAt: time,
+    pulseCooldown: 0,
+    targetWallId: null,
+  };
+}
+
+export function initialAmmoState() {
+  const state = {};
+  for (const tool of TOOLS) {
+    state[tool.id] = tool.ammo;
+  }
+  return state;
+}
+
+export function maxAmmoTotal() {
+  return TOOLS.reduce((sum, tool) => sum + tool.ammo, 0);
+}
 
 function point(x, y) {
   return { x, y };
