@@ -1,215 +1,211 @@
 ﻿# plans.md
 
-## Execution Rules
-1. Follow `AGENTS.md` as constitution.
-2. This plan is mandatory, but may be improved if a better path appears.
-3. Every milestone ends with:
-   1. A concrete test/check.
-   2. A git commit when passing.
+## Execution Rules (Active)
+1. Follow `AGENTS.md` as the constitutional source of truth.
+2. This plan is mandatory and step-ordered; improvements are allowed only if they preserve V2 end goals and are recorded.
+3. Every milestone must end with:
+   1. concrete self-tests/checks,
+   2. a passing result,
+   3. a milestone-scoped git commit.
+4. Keep rollback safety:
+   1. create a backup point before major rewrites,
+   2. avoid destructive git commands.
 
-## Milestone 1 - Project Bootstrap
-- [x] Initialize git repo if needed.
-- [x] Create core files:
-  - `index.html`
-  - `styles.css`
-  - `src/main.js`
-  - `src/config.js`
-  - `src/gameLoop.js`
-  - `src/inputHandler.js`
-  - `src/physicsEngine.js`
-  - `src/renderer.js`
-  - `src/math.js`
-  - `src/particles.js`
-- [x] Wire modules and confirm canvas boots.
+## Current Snapshot (2026-02-15)
+- [x] Backup commit created before V2 rewrite work.
+- [x] Backup tag created: `backup/pre-v2-governance-2026-02-15`.
+- [x] `AGENTS.md` migrated to V2 constitution.
+- [ ] Core runtime still reflects pre-V2 implementation and must be migrated.
 
-### Test Gate
-- Run JS syntax checks.
-- Open app (or launch local static server) and verify no runtime error.
+## Legacy Record (Archived)
+V1 and entropy phase milestones were completed previously (bootstrap, 10 tools, lens overlays, CA thermo, equation HUD, verification).
+This section is archived; active development now follows the V2 milestones below.
 
-### Commit
-- `chore: bootstrap canvas architecture and module wiring`
+## Phase 3 - V2 Migration Roadmap (Active)
 
-## Milestone 2 - Core World And Baseline Physics
-- [x] Build 16:9 board and white maze walls matching references.
-- [x] Implement balloon state:
-  - position, velocity, radius, mass proxy, glow.
-- [x] Implement wall collision system with tunable elasticity.
-- [x] Implement linked-list style fading trail.
-- [x] Add baseline gravity/damping defaults.
-
-### Test Gate
-- Balloon moves and bounces stably in maze.
-- Trail renders and fades.
-- No tunneling through walls in normal mode.
-
-### Commit
-- `feat: add maze, balloon dynamics, collisions, and trail`
-
-## Milestone 3 - Sidebar + Tool Selection + HUD
-- [x] Build left sidebar with 10 constants (icon-like labels).
-- [x] Add active tool highlight.
-- [x] Add title text and frame ornament style.
-- [x] Add `"Constants Remaining: X/10"` display logic.
-- [x] Hook pointer input for selecting tools and applying effects in board area.
-
-### Test Gate
-- All 10 tools selectable.
-- HUD updates without layout break on common resolutions.
-
-### Commit
-- `feat: implement themed sidebar, tool selection, and constants HUD`
-
-## Milestone 4 - Lens System + Field Overlay Pipeline
-- [x] Implement cursor lens radius system.
-- [x] Restrict field overlays to lens mask (`ctx.clip()` pipeline).
-- [x] Add generic vector field renderer.
-- [x] Add optional grid renderer (only for Mass/Dark Energy).
-
-### Test Gate
-- Field visuals are hidden outside lens.
-- Mass mode uniquely shows grid.
-
-### Commit
-- `feat: add lens-based reveal system for field overlays`
-
-## Milestone 5 - Implement 10 Mechanics (Physics + VFX)
-- [x] Heat: orange radial glow + outward vectors + balloon expansion + outward push.
-- [x] Cold: icy texture + shrink + denser/heavier behavior.
-- [x] Mass: inward warped cyan grid + attraction force.
-- [x] Dark Energy: outward warped cyan grid + repulsion force.
-- [x] High Pressure: outward impulse burst particles.
-- [x] Vacuum: inward sink-flow star streak particles.
-- [x] Tunneling: wall segment static/wireframe + collision bypass + drag + RGB ghost balloon.
-- [x] Viscosity: heavy damping.
-- [x] Elasticity: high bounce conservation.
-- [x] Entropy: smooth noise perturbation in velocity.
-
-### Test Gate
-- Manual mechanic checklist passes for all 10 tools.
-- No tool crashes loop or breaks input.
-
-### Commit
-- `feat: implement all ten constants mechanics and visual effects`
-
-## Milestone 6 - Visual Polish To Match References
-- [x] Tune glow intensities, line weights, and spacing to image style.
-- [x] Tune title typography and composition.
-- [x] Add subtle cyber-lab ambience (grain/vignette/light bloom approximations).
-- [x] Ensure Heat/Mass/Vacuum/Tunneling resemble `1.png`-`4.png` one-to-one logic.
-- [x] Verify desktop and mobile fit.
-
-### Test Gate
-- Side-by-side visual check with the four reference images.
-- Basic responsiveness check at 1366x768 and mobile portrait.
-
-### Commit
-- `style: polish visuals for reference parity and responsive layout`
-
-## Milestone 7 - Final Validation And Delivery
-- [x] Run final syntax/test checks.
-- [x] Run final manual playthrough.
-- [x] Update `plans.md` checkboxes to complete.
-- [x] Provide concise run instructions in `README.md`.
-
-### Test Gate
-- Clean run with no console errors.
-- All milestones marked complete.
-
-### Commit
-- `docs: finalize plan completion and usage instructions`
-
-## Final Verification Notes
-- Date: 2026-02-14
-- Commands run:
-  - `node --check` on all source modules.
-  - `node tests/physics-smoke.mjs`
-  - `node tests/ui-layout-smoke.mjs`
-  - `node tests/overlay-mode-smoke.mjs`
-  - `node tests/tool-mechanics-smoke.mjs`
-  - Local static server smoke test via python -m http.server + Invoke-WebRequest.
-- Result: all gates passed and all milestones committed.
-
-## Phase 2 - Thermodynamic Entropy Recode
-
-### Milestone 8 - Plan Extension And Baseline Snapshot
-- [x] Add a second-phase plan for thermodynamic entropy + equation HUD.
-- [x] Capture current baseline with a full test pass before recode.
+### Milestone 1 - Assetsv2 Audit And Runtime Manifest
+- [ ] Verify real `assetsv2/` directory structure and enumerate available files.
+- [ ] Create centralized V2 asset manifest in `src/config.js` (or dedicated module).
+- [ ] Map required runtime buckets:
+  - backgrounds (normal/hacker),
+  - walls/maze visuals,
+  - cat visuals (normal/hacker),
+  - 6 tool icons,
+  - audio tracks and SFX.
+- [ ] Add resilient fallback behavior for missing assets.
 
 #### Test Gate
-- Run current smoke tests and ensure green baseline.
+- Validate manifest paths resolve at runtime (or fallback path logs are explicit).
+- Run syntax checks on updated modules.
+- Smoke-run app to ensure no boot regression.
 
 #### Commit
-- `docs: extend plan for thermodynamic entropy recode`
+- `chore: add assetsv2 manifest and resilient asset loading fallbacks`
 
-### Milestone 9 - Cellular Automata Thermo Field
-- [x] Add a cellular-automata thermo grid over the board.
-- [x] Track per-cell temperature, pressure, and entropy proxies.
-- [x] Implement diffusion, relaxation, and local forcing from tools.
-- [x] Sample field at balloon position and drive balloon thermo state from field.
-- [x] Recode entropy tool to use pressure/temperature disorder instead of pure velocity noise.
+### Milestone 2 - Tool System Refactor (10 -> 6) + Metadata
+- [ ] Refactor tool list to exactly 6 powers:
+  - `heat`, `cold`, `gravity`, `highPressure`, `vacuum`, `quantumTunneling`.
+- [ ] Remove V1-only tools from active runtime paths (`darkEnergy`, `viscosity`, `elasticity`, `entropy`).
+- [ ] Add per-tool metadata:
+  - duration,
+  - ammo,
+  - icon path,
+  - SFX path,
+  - deployment radius.
+- [ ] Update any helper maps/constants and UI layout assumptions.
 
 #### Test Gate
-- Add/extend tests to verify CA updates and entropy behavior are stable and meaningful.
-- Keep physics and mechanic smoke tests passing.
+- Syntax checks for touched modules.
+- Existing mechanics/UI smoke tests updated or replaced for 6-tool model.
+- Manual tool selection check confirms exactly 6 selectable entries.
 
 #### Commit
-- `feat: recode entropy and thermo behavior using cellular automata field`
+- `refactor: migrate tool manifest to six-power v2 schema`
 
-### Milestone 10 - Temperature Heatmap Hover Visuals
-- [x] Render temperature heatmap overlay inside lens when hovering/applying heat-related commands.
-- [x] Make heat/cold/vacuum/highPressure/entropy visuals draw from CA field data.
-- [x] Keep gravity-only grid rule intact for Mass/Dark Energy modes.
+### Milestone 3 - Input Model Migration (Hold -> Click Deploy)
+- [ ] Convert pointer interaction from hold-to-apply to click-to-deploy.
+- [ ] Implement deploy instance model (`activePowerDrops`).
+- [ ] On board click with ammo available:
+  - spawn drop,
+  - decrement ammo,
+  - attach duration state.
+- [ ] Draw dropped icon/PNG for active duration.
 
 #### Test Gate
-- Overlay mode tests pass.
-- Manual hover check confirms visible heatmap color response.
+- Click once creates one active drop.
+- Drop expires at duration end.
+- Ammo decrements only on successful deployment.
+- Syntax + UI smoke checks pass.
 
 #### Commit
-- `feat: add thermo heatmap hover overlays driven by CA field`
+- `feat: add click-to-deploy timed power drops with ammo consumption`
 
-### Milestone 11 - Live Equation HUD For All 10 Commandments
-- [x] Add a per-commandment live equation string in 3Blue1Brown style.
-- [x] Update equations every frame with live values (cursor/balloon/field terms).
-- [x] Keep equations decoupled from true simulation fidelity (display layer only).
+### Milestone 4 - Physics Engine V2 Mapping
+- [ ] Rework force application to iterate active drops.
+- [ ] Implement V2 mechanics:
+  - heat 2.0s expansion,
+  - cold overlap-gated 2.0s shrink,
+  - gravity 7.0s attraction,
+  - highPressure 0.5s push,
+  - vacuum 0.5s pull,
+  - quantumTunneling targeted wall disable + drag.
+- [ ] Keep deterministic collision core and dt clamping.
 
 #### Test Gate
-- Add tests to ensure each commandment has a live equation and updates safely.
-- Full smoke suite remains green.
+- Mechanic spot checks for all 6 powers.
+- No runtime errors or unstable velocity explosions.
+- Physics smoke tests pass (update tests as needed).
 
 #### Commit
-- `feat: add live equation HUD for all commandments`
+- `feat: implement v2 six-power physics runtime on active drop model`
 
-### Milestone 12 - Final Phase 2 Closeout
-- [x] Run full syntax checks.
-- [x] Run full smoke test suite.
-- [x] Run local server smoke check.
-- [x] Mark all Phase 2 checkboxes complete with verification notes.
+### Milestone 5 - Renderer Mode Split (Normal/Hacker)
+- [ ] Add mode state and UI toggle.
+- [ ] Bind mode-specific backgrounds/walls/cat visuals from `assetsv2/`.
+- [ ] Enforce overlay gating:
+  - hacker mode: full lens-based overlays,
+  - normal mode: simplified pixel emissions near drop icons.
+- [ ] Preserve shared physics state across both modes.
 
 #### Test Gate
-- Clean run with no errors.
-- All Phase 2 tasks checked.
+- Toggle switches visuals without changing underlying physics behavior.
+- Hacker mode shows full overlays through lens.
+- Normal mode suppresses full overlays and shows simplified FX.
 
 #### Commit
-- `docs: finalize thermodynamic phase and verification notes`
+- `feat: split renderer into normal and hacker visual pipelines`
 
-## Phase 2 Verification Notes
-- Date: 2026-02-14
-- Commands run:
+### Milestone 6 - Neon Cat + Stage And Goal Progression
+- [ ] Replace balloon render path with neon cat visuals while keeping stable collider.
+- [ ] Add stage state and neon rod goal logic.
+- [ ] Implement rainbow rod progression across stages.
+- [ ] Implement stage-dependent trail profiles.
+
+#### Test Gate
+- Cat reaches rod and triggers stage progression.
+- Rod color changes by stage.
+- Trail style changes per stage profile.
+
+#### Commit
+- `feat: add neon cat actor, rainbow rod progression, and stage-based trails`
+
+### Milestone 7 - Audio Integration
+- [ ] Add `AudioManager` for BGM and SFX orchestration.
+- [ ] Wire mode-based BGM:
+  - normal -> `theme.mp3`,
+  - hacker -> `Hacker_theme.mp3`.
+- [ ] Wire deployment SFX (`Heat`, `Cold`, `Gravity`, `quantum`, `vacuum`).
+- [ ] Implement first-gesture audio start and mode switch crossfade.
+
+#### Test Gate
+- Correct BGM per mode.
+- Correct SFX per deployed power.
+- Audio failures do not crash gameplay.
+
+#### Commit
+- `feat: integrate v2 audio manager with mode bgm and power sfx`
+
+### Milestone 8 - HUD And UX Finalization
+- [ ] Update HUD wording to V2 semantics.
+- [ ] Show ammo badges on all 6 sidebar powers.
+- [ ] Preserve clear active-tool highlight and readable mode status.
+- [ ] Ensure responsive 16:9 composition remains strong.
+
+#### Test Gate
+- UI layout smoke test passes on desktop and mobile viewport checks.
+- No text overlap or clipped controls.
+
+#### Commit
+- `feat: finalize v2 hud sidebar ammo and mode controls`
+
+### Milestone 9 - Test Suite Migration And Hardening
+- [ ] Update existing tests from 10-tool assumptions to 6-tool model.
+- [ ] Add tests for:
+  - deploy duration expiration,
+  - ammo decrement behavior,
+  - cold overlap-only timer behavior,
+  - mode overlay gating,
+  - stage trail switching,
+  - audio manager safe initialization.
+- [ ] Run full automated suite.
+
+#### Test Gate
+- All syntax checks green.
+- All smoke/mechanic tests green.
+
+#### Commit
+- `test: migrate and expand suite for v2 gameplay contracts`
+
+### Milestone 10 - Final Verification And Delivery
+- [ ] Run full final validation pass.
+- [ ] Perform manual gameplay walkthrough across modes and stages.
+- [ ] Confirm AGENTS + plans + README alignment with implemented behavior.
+- [ ] Record final verification notes with commands and outcomes.
+
+#### Test Gate
+- Clean runtime with no console errors.
+- All milestones complete.
+
+#### Commit
+- `docs: finalize v2 migration verification and delivery notes`
+
+## Verification Command Template (Per Milestone)
+- Syntax checks (minimum affected modules):
   - `node --check src/main.js`
   - `node --check src/physicsEngine.js`
   - `node --check src/renderer.js`
-  - `node --check src/thermoAutomata.js`
-  - `node --check src/equationHud.js`
-  - `node --check tests/thermo-ca-smoke.mjs`
-  - `node --check tests/equation-hud-smoke.mjs`
-  - `node --check tests/thermo-heatmap-hover-smoke.mjs`
-  - `node tests/physics-smoke.mjs`
+- Smoke tests (adjust as tests migrate):
   - `node tests/ui-layout-smoke.mjs`
   - `node tests/overlay-mode-smoke.mjs`
   - `node tests/tool-mechanics-smoke.mjs`
-  - `node tests/thermo-ca-smoke.mjs`
-  - `node tests/equation-hud-smoke.mjs`
-  - `node tests/thermo-heatmap-hover-smoke.mjs`
-  - Python inline `ThreadingHTTPServer` + `urllib.request.urlopen` (`http-status: 200`)
-- Result: all Phase 2 gates passed.
 
+## V2 End Goal Checklist
+- [ ] Exactly 6 powers active in runtime and UI.
+- [ ] Click-to-deploy + timed icon drops + ammo system complete.
+- [ ] Neon cat replaces balloon visuals.
+- [ ] Two visual modes complete with identical physics behavior.
+- [ ] Hacker-only full overlay rendering through lens.
+- [ ] Normal-mode simplified pixel FX from dropped icons.
+- [ ] Stage progression + rainbow rod + stage-dependent trails.
+- [ ] Mode BGM + power SFX fully integrated.
+- [ ] Full test suite green.
