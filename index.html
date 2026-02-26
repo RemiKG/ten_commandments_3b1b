@@ -1,15 +1,97 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Ten Commandments</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Neon Cat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="loading.css">
 </head>
 <body>
-  <main class="stage-root">
-    <canvas id="gameCanvas" width="1600" height="900" aria-label="The Ten Commandments game canvas"></canvas>
-  </main>
-  <script type="module" src="src/main.js"></script>
+  <!-- ─── LOADING SCREEN ──────────────────────────────── -->
+  <div id="loading-screen">
+    <div id="loading-title">The Neon Cat</div>
+    <div id="element-card">
+      <span id="element-number">1</span>
+      <span id="element-symbol">H</span>
+      <span id="element-name">Hydrogen</span>
+      <span id="element-mass">1.008 u</span>
+    </div>
+    <div id="loading-progress">
+      <div id="loading-bar-track"><div id="loading-bar-fill"></div></div>
+      <div id="loading-step-display">
+        <span id="loading-current">1</span>
+        <span id="loading-separator">/</span>
+        <span id="loading-total">10</span>
+      </div>
+      <div id="loading-label">Initializing Elements</div>
+    </div>
+  </div>
+
+  <!-- ─── TOP BAR ─────────────────────────────────────── -->
+  <div id="topbar">
+    <span id="topbar-title">The Neon Cat</span>
+    <div id="level-box"><span id="topbar-equation"></span></div>
+    <label id="hacker-toggle">
+      <input type="checkbox" id="hacker-cb" checked>
+      <span class="cb-box"></span>
+      Hacker Mode
+    </label>
+  </div>
+
+  <!-- ─── MAIN LAYOUT ─────────────────────────────────── -->
+  <div id="main">
+    <!-- LEFT PANEL: Tool Info -->
+    <div id="left-panel">
+      <div class="panel-header" id="left-panel-header">// ABILITIES</div>
+      <div id="tool-info-list"></div>
+      <button id="reset-level-btn">⟳ Reset Level</button>
+    </div>
+
+    <!-- CENTER: Game Canvas -->
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+    </div>
+
+    <!-- RIGHT PANEL: Stats (hacker mode) -->
+    <div id="right-panel">
+      <div class="panel-header">// PHYSICS TELEMETRY</div>
+      <div id="stats-body"></div>
+    </div>
+  </div>
+
+  <!-- ─── BOTTOM BAR ──────────────────────────────────── -->
+  <div id="bottombar">
+    <span id="bottom-info"></span>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="physics.js"></script>
+  <script src="rendering.js"></script>
+  <script src="tools.js"></script>
+  <script src="levels.js"></script>
+  <script src="levels/registry.js"></script>
+  <script src="levels/level1.js"></script>
+  <script src="levels/level2.js"></script>
+  <script src="levels/level3.js"></script>
+  <script src="levels/level4.js"></script>
+  <script src="levels/level5.js"></script>
+  <script src="levels/level6.js"></script>
+  <script src="levels/level7.js"></script>
+  <script src="abilities/_registry.js"></script>
+  <script src="abilities/heat.js"></script>
+  <script src="abilities/cold.js"></script>
+  <script src="abilities/mass.js"></script>
+  <script src="abilities/highPressure.js"></script>
+  <script src="abilities/vacuum.js"></script>
+  <script src="abilities/tunneling.js"></script>
+  <script src="abilities/index.js"></script>
+  <script src="game.js"></script>
+  <script src="loading.js"></script>
 </body>
 </html>

@@ -1,0 +1,216 @@
+/* ═══════════════════════════════════════════════
+   LOADING SCREEN – Hydrogen to Neon
+   ═══════════════════════════════════════════════ */
+
+#loading-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  /* Mixed aesthetic: purple nebula + cyan/green digital */
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(90,20,120,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 80%, rgba(0,180,140,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(40,10,60,0.6) 0%, transparent 70%),
+    linear-gradient(135deg, #0a0510 0%, #060d10 30%, #0c0518 60%, #050a0c 100%);
+  overflow: hidden;
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+#loading-screen.fade-out {
+  opacity: 0;
+  transform: scale(1.15);
+  pointer-events: none;
+}
+
+/* Animated background particles */
+#loading-screen::before,
+#loading-screen::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+#loading-screen::before {
+  background:
+    radial-gradient(2px 2px at 15% 25%, rgba(0,255,180,0.3), transparent),
+    radial-gradient(2px 2px at 85% 15%, rgba(200,120,255,0.25), transparent),
+    radial-gradient(1.5px 1.5px at 45% 75%, rgba(0,230,160,0.2), transparent),
+    radial-gradient(2px 2px at 70% 60%, rgba(180,100,255,0.2), transparent),
+    radial-gradient(1px 1px at 30% 50%, rgba(89,236,255,0.25), transparent),
+    radial-gradient(1.5px 1.5px at 60% 35%, rgba(255,150,220,0.15), transparent),
+    radial-gradient(1px 1px at 90% 45%, rgba(0,255,180,0.15), transparent),
+    radial-gradient(2px 2px at 20% 85%, rgba(130,80,200,0.2), transparent);
+  animation: loadingDrift 12s ease-in-out infinite alternate;
+}
+@keyframes loadingDrift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.8 }
+  50% { transform: translate(-8px, 6px) scale(1.02); opacity: 1 }
+  100% { transform: translate(5px, -4px) scale(0.98); opacity: 0.85 }
+}
+#loading-screen::after {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(255,255,255,0.012) 3px,
+    rgba(255,255,255,0.012) 4px
+  );
+  opacity: 0.5;
+}
+
+/* ─── Element card ─────────────────────────────── */
+#element-card {
+  position: relative;
+  width: 200px; height: 240px;
+  border: 2px solid rgba(0,255,180,0.2);
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  margin-bottom: 40px;
+  background: rgba(10,15,20,0.7);
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 0 40px rgba(0,255,180,0.06),
+    0 0 80px rgba(130,60,200,0.06),
+    inset 0 0 30px rgba(0,0,0,0.3);
+  transition: border-color 0.4s, box-shadow 0.5s;
+  overflow: hidden;
+}
+#element-card::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg,
+    rgba(0,255,180,0.04) 0%,
+    rgba(130,60,200,0.04) 50%,
+    rgba(89,236,255,0.03) 100%
+  );
+  pointer-events: none;
+}
+
+#element-number {
+  position: absolute; top: 12px; left: 16px;
+  font-size: 14px; font-weight: 600;
+  color: rgba(0,255,180,0.45);
+  font-family: 'Quicksand', sans-serif;
+  transition: color 0.3s;
+}
+
+#element-symbol {
+  font-size: 72px; font-weight: 700;
+  font-family: 'Quicksand', sans-serif;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #00ffb4, #c084fc, #59ecff);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  transition: transform 0.3s ease;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+#element-name {
+  font-size: 15px; font-weight: 500;
+  color: rgba(200,170,230,0.7);
+  font-family: 'Quicksand', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: color 0.3s;
+}
+
+#element-mass {
+  position: absolute; bottom: 14px;
+  font-size: 12px; font-weight: 400;
+  color: rgba(0,255,180,0.3);
+  font-family: 'Quicksand', sans-serif;
+  transition: color 0.3s;
+}
+
+/* Card glow pulse on step change */
+#element-card.pulse {
+  border-color: rgba(0,255,180,0.45);
+  box-shadow:
+    0 0 30px rgba(0,255,180,0.12),
+    0 0 60px rgba(130,60,200,0.1),
+    inset 0 0 20px rgba(0,255,180,0.04);
+}
+
+/* ─── Progress section ─────────────────────────── */
+#loading-progress {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 14px;
+  width: 280px;
+}
+
+#loading-bar-track {
+  width: 100%; height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+#loading-bar-fill {
+  height: 100%; width: 0%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #00ffb4, #c084fc, #59ecff);
+  box-shadow: 0 0 12px rgba(0,255,180,0.3);
+  transition: width 0.4s ease;
+}
+
+#loading-step-display {
+  display: flex; align-items: baseline; gap: 6px;
+}
+#loading-current {
+  font-size: 28px; font-weight: 700;
+  font-family: 'Quicksand', sans-serif;
+  color: #00ffb4;
+  transition: color 0.3s;
+}
+#loading-separator {
+  font-size: 16px; color: rgba(255,255,255,0.2);
+  font-family: 'Quicksand', sans-serif;
+}
+#loading-total {
+  font-size: 16px; font-weight: 500;
+  font-family: 'Quicksand', sans-serif;
+  color: rgba(200,170,230,0.5);
+}
+
+#loading-label {
+  font-size: 11px; font-weight: 500;
+  color: rgba(0,255,180,0.35);
+  font-family: 'Quicksand', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ─── Title at top ─────────────────────────────── */
+#loading-title {
+  position: absolute;
+  top: 10%;
+  font-size: 32px; font-weight: 700;
+  font-family: 'Quicksand', sans-serif;
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, #ff9de2, #c084fc, #00ffb4, #59ecff);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 4s ease-in-out infinite;
+  text-transform: uppercase;
+}
+@keyframes titleShimmer {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
+}
+
+/* ─── Neon flash on final step ─────────────────── */
+#element-card.neon-flash {
+  border-color: rgba(0,255,180,0.7) !important;
+  box-shadow:
+    0 0 50px rgba(0,255,180,0.25),
+    0 0 100px rgba(89,236,255,0.15),
+    0 0 150px rgba(130,60,200,0.1),
+    inset 0 0 40px rgba(0,255,180,0.08) !important;
+}
+#element-card.neon-flash #element-symbol {
+  transform: scale(1.08);
+}
